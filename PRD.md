@@ -3,6 +3,24 @@
 **Status:** Hackathon starter PRD · review and fill in the **`<TODO>`** sections before you tag `prd-done`.
 
 ---
+Data Requirements
+- Names of members for the team
+- Email for memberes
+
+Functional Requirements
+- There has to be a Kanban Board with different coloumns that represent what stage of development you are on for a specific task
+- Tasks need to be addable
+- Tasks should be editable and removable
+- Tasks should have a text field for Members to add the Context of a task
+- Tasks should have a form selection to specify the AI Tool that is being used for the Vibe Code task
+- Task should have a selection form to assign the task to a specific user
+- There should be calendar feature for the task so that users can add a deadline for the task
+- There should be an Anchor that gives the user a text field to enter any relevant URLs for "Git Repository", "Presentation", and others.
+
+Non-Functional Requirements
+- The website should be accessible for colour blind users
+- The website should have tags for visually impaired users
+- The website should have logins to keep the data secure
 
 ## 1. Problem
 
