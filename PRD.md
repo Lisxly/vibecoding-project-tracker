@@ -16,6 +16,8 @@ Functional Requirements
 - Task should have a selection form to assign the task to a specific user
 - There should be calendar feature for the task so that users can add a deadline for the task
 - There should be an Anchor that gives the user a text field to enter any relevant URLs for "Git Repository", "Presentation", and others.
+- There needs to be a simple sign up page to include Name and Email which gets stored and can be used to log in
+- A login page is required from which you can log into your team to view your team's kanban board
 
 Non-Functional Requirements
 - The website should be accessible for colour blind users
