@@ -1,117 +1,109 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import useLocalStorage from './hooks/useLocalStorage.js';
+import {
+  CONTEXT_TEMPLATE, SEED_MEMBERS, STAGES, buildContextMarkdown, copyText, newId, seedTasks, toISO,
+} from './lib.js';
+import AuthPage from './components/AuthPage.jsx';
+import Board from './components/Board.jsx';
+import AnchorBoard from './components/AnchorBoard.jsx';
+import TaskModal from './components/TaskModal.jsx';
+import Icon from './components/Icon.jsx';
+import { Avatar } from './components/TaskCard.jsx';
 
-/**
- * Vibecoding Project Tracker — starter scaffold.
- *
- * This file is intentionally almost empty. The boilerplate (Vite, React,
- * Tailwind) is configured for you, plus a few shared constants and a
- * localStorage helper. Everything visible on screen, you build.
- *
- * Where to start (build sequence in Phase 3):
- *   - M4  data-model    : render the four columns and the task cards below.
- *   - M5  crud-modal    : add the "+" button modal and the edit-on-click modal.
- *   - M6  tag-style     : feature vs. bug color coding (uses DESIGN.md §2 colors).
- *   - M7  task-owner    : assignee badge + "Hand off to..." dropdown.
- *   - M8  due-tint      : color cards by due date (uses DESIGN.md §2 due-state colors).
- *   - M9  context       : a curated Context briefing field on the modal.
- *   - M10 copy-prompt   : a "Copy as Prompt Context" button that serializes the task + context.
- *   - M11 anchors       : the Anchor Board above the Kanban.
- *   - M12 secret-sauce  : the one open-ended thing that makes your tracker yours.
- *
- * Search the file for `TODO M<n>` to find the right hook for each milestone.
- */
-
-/**
- * @typedef {Object} Task
- * @property {string} id
- * @property {string} title
- * @property {string} description
- * @property {'feature'|'bug'} type
- * @property {'todo'|'in-progress'|'review'|'done'} status
- * @property {string} assignee
- * @property {string|null} dueDate     ISO 'YYYY-MM-DD'
- * @property {string} createdDate      ISO 'YYYY-MM-DD'
- */
-
-// The four columns of the board, in render order.
-// Use these IDs everywhere — do not invent new ones.
-export const STAGES = [
-  { id: 'todo',        label: 'To Do' },
-  { id: 'in-progress', label: 'In Progress' },
-  { id: 'review',      label: 'Review' },
-  { id: 'done',        label: 'Done' },
-];
-
-// Replace these placeholders with the three names from PRD §8 before M4.
-// They become the only valid values for `Task.assignee`.
-export const TEAM = ['Teammate A', 'Teammate B', 'Teammate C'];
-
-/**
- * A tiny localStorage hook — survives reloads, no library needed.
- *
- * Usage:
- *   const [tasks, setTasks] = useLocalStorage('vibetracker.tasks', []);
- */
-export function useLocalStorage(key, initialValue) {
-  const [value, setValue] = useState(() => {
-    try {
-      const raw = window.localStorage.getItem(key);
-      return raw != null ? JSON.parse(raw) : initialValue;
-    } catch {
-      return initialValue;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      /* quota or private-mode error — silently ignore for hackathon */
-    }
-  }, [key, value]);
-
-  return [value, setValue];
-}
+export { STAGES };
 
 export default function App() {
-  // TODO M4 data-model:
-  //   const [tasks, setTasks] = useLocalStorage('vibetracker.tasks', [/* 3-4 seed tasks */]);
-  //
-  // TODO M5 crud-modal:
-  //   const [editing, setEditing] = useState(null);
-  //
-  // TODO M11 anchors:
-  //   const [anchors, setAnchors] = useLocalStorage('vibetracker.anchors', [...]);
+  const [members, setMembers] = useLocalStorage('vt:members', SEED_MEMBERS);
+  const [sessionId, setSessionId] = useLocalStorage('vt:session', null);
+  const [tasks, setTasks] = useLocalStorage('vt:tasks', seedTasks);
+  const [anchors, setAnchors] = useLocalStorage('vt:anchors', {});
+  const [modal, setModal] = useState(null); // { id } | { isNew: true }
+  const [toast, setToast] = useState(null);
+  const [flashId, setFlashId] = useState(null);
+  const [, tick] = useState(0);
+
+  // Re-render every minute so due-date colors update by themselves (M8).
+  useEffect(() => { const i = setInterval(() => tick((n) => n + 1), 60000); return () => clearInterval(i); }, []);
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 2200); return () => clearTimeout(t); }, [toast]);
+
+  const user = members.find((m) => m.id === sessionId);
+
+  if (!user) {
+    return (
+      <AuthPage members={members} onLogin={(m) => setSessionId(m.id)}
+        onSignup={(p) => { const m = { id: newId(), ...p }; setMembers((ms) => [...ms, m]); setSessionId(m.id); }} />
+    );
+  }
+
+  const notify = (msg) => setToast({ msg, key: Date.now() });
+  const copy = async (task, isMarkdown) => {
+    const ok = await copyText(isMarkdown ? task : buildContextMarkdown(task));
+    notify(ok ? 'Copied.' : "Couldn't copy — check browser permissions.");
+  };
+  const move = (id, status) => setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, status } : t)));
+  const handoff = (id, name) => {
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, assignee: name } : t)));
+    setFlashId(id); setTimeout(() => setFlashId(null), 1200);
+    notify(`You have assigned this role to ${name}.`);
+  };
+  const save = (data) => {
+    setTasks((ts) => (ts.some((t) => t.id === data.id) ? ts.map((t) => (t.id === data.id ? data : t)) : [...ts, data]));
+    setModal(null);
+  };
+  const remove = (id) => { setTasks((ts) => ts.filter((t) => t.id !== id)); setModal(null); };
+
+  const modalTask = modal?.isNew
+    ? { id: newId(), title: '', description: '', type: 'feature', status: 'todo', assignee: user.name, dueDate: null,
+        createdDate: toISO(new Date()), context: CONTEXT_TEMPLATE, contextTool: null, contextUpdatedAt: null }
+    : tasks.find((t) => t.id === modal?.id);
 
   return (
-    <div className="min-h-screen p-6">
-      <header className="mb-6 flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Vibecoding Project Tracker
-          </h1>
-          <p className="text-sm text-slate-500">
-            {/* Replace this line with your team name from PRD §11. */}
-            Team starter
-          </p>
+    <div className="min-h-screen">
+      <header className="bg-brand-primary text-[#f5f5fc]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3">
+          <div className="flex items-center gap-2 font-heading text-2xl font-semibold"><Icon name="monitor" size={24} /> VibeCode</div>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setModal({ isNew: true })}
+              className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-brand-accent to-[#e9c8ff] px-4 py-2 font-medium text-text-primary">
+              <Icon name="plus" size={16} /> Add Task
+            </button>
+            <span className="hidden text-sm sm:inline">{user.name}</span>
+            <button type="button" onClick={() => setSessionId(null)} aria-label="Log out" className="rounded-md p-2 hover:bg-white/15">
+              <Icon name="logout" size={18} />
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* TODO M11 anchors: render the Anchor Board (Presentation / Demo / Report / Documentation) above the board. */}
+      <main className="mx-auto max-w-7xl px-6 py-6">
+        <AnchorBoard anchors={anchors} onChange={(id, url) => setAnchors((a) => ({ ...a, [id]: url }))} />
 
-      {/*
-        TODO M4 data-model:
-          Render a Kanban board with the four columns from STAGES.
-          Each column should display the tasks whose status matches its id.
-          Pre-populate 3-4 mock tasks so the board isn't empty on first load.
+        <section aria-label="Team" className="mb-4 flex flex-wrap items-center gap-4">
+          <h2 className="font-heading text-base font-semibold uppercase">Team</h2>
+          {members.map((m) => {
+            const n = tasks.filter((t) => t.assignee === m.name && t.status !== 'done').length;
+            return (
+              <span key={m.id} className="inline-flex items-center gap-2 text-xs text-text-muted">
+                <Avatar name={m.name} /> {m.name} · {n} active
+              </span>
+            );
+          })}
+        </section>
 
-        TODO M5 crud-modal:
-          Add a "+" button that opens a modal with every Task field.
-          Clicking a card should open the same modal in edit mode.
-      */}
-      <main className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-400">
-        Build the four-column board here · M4
+        <Board tasks={tasks} members={members} flashId={flashId} onOpen={(id) => setModal({ id })}
+          onMove={move} onCopy={copy} onHandoff={handoff} />
       </main>
+
+      {modal && modalTask && (
+        <TaskModal key={modalTask.id} task={modalTask} isNew={!!modal.isNew} members={members}
+          onSave={save} onDelete={remove} onCopy={copy} onClose={() => setModal(null)} />
+      )}
+      {toast && (
+        <div key={toast.key} role="status" aria-live="polite"
+          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-fade rounded-md bg-brand-primary px-4 py-2 text-sm text-[#f5f5fc] shadow-lg">
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }

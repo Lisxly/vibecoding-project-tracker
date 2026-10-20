@@ -2,13 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root {
-  height: 100%;
-}
-
-body {
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f8fafc; /* slate-50 */
-  color: #0f172a;            /* slate-900 */
+@layer base {
+  body { @apply bg-surface-page font-body text-sm text-text-primary; }
+  :focus-visible { outline: 2px solid #6f6e80; outline-offset: 2px; }
 }

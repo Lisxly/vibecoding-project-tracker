@@ -19,7 +19,7 @@ What you build, starting at M4:
 - The "Copy as Prompt Context" button (the demo's hero moment).
 - And everything else through M13.
 
-## Quick startsdjhuio
+## Quick start
 
 ```bash
 # 1. Fork this repo on GitHub. Then clone YOUR fork:
@@ -101,3 +101,4 @@ Once M9 (`context`) is done, keep the Context field of each real task up to date
 ---
 
 *UXD Vibecoding Hackathon 2026 · Prof. Dr. Ignacio Alvarez*
+linked
