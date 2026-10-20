@@ -19,7 +19,7 @@ What you build, starting at M4:
 - The "Copy as Prompt Context" button (the demo's hero moment).
 - And everything else through M13.
 
-## Quick start
+## Quick startsdjhuio
 
 ```bash
 # 1. Fork this repo on GitHub. Then clone YOUR fork:
