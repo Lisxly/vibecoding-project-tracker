@@ -6,23 +6,31 @@
 Data Requirements
 - Names of members for the team
 - Email for memberes
+- Unique "Join Team" code
 
 Functional Requirements
-- There has to be a Kanban Board with different coloumns that represent what stage of development you are on for a specific task
-- Tasks need to be addable
-- Tasks should be editable and removable
-- Tasks should have a text field for Members to add the Context of a task
-- Tasks should have a form selection to specify the AI Tool that is being used for the Vibe Code task
-- Task should have a selection form to assign the task to a specific user
-- There should be calendar feature for the task so that users can add a deadline for the task
+- There has to be a Kanban Board with different columns that represent what stage of development you are on for a specific task.
+- Tasks need to be addable.
+- Tasks should be editable and removable.
+- Tasks should have a text field for Members to add the Context of a task.
+- Tasks should have a form selection to specify the AI Tool that is being used for the Vibe Code task.
+- Tasks should have a selection form to assign the task to a specific user.
+- There should be a calendar feature for the task so that users can add a deadline for the task.
 - There should be an Anchor that gives the user a text field to enter any relevant URLs for "Git Repository", "Presentation", and others.
-- There needs to be a simple sign up page to include Name and Email which gets stored and can be used to log in
-- A login page is required from which you can log into your team to view your team's kanban board
+- There needs to be a simple sign-up page to include Name and Email, which gets stored and can be used to log in.
+- A login page is required, from which you can log in to your team to view your team's Kanban board.
+- When signing in, the user's email needs to be unique and verified. If the email is not unique, inform the user that the email is already signed up and in use.
+- When logged in, the user should see a dashboard on the hero page with a section for "My teams", "Create a team", and "My Profile".
+- When clicking on "Create a team", the user should be able to create a new Kanban board with all features and be able to add team members using their emails. They should also be able to generate a unique code so anyone can join a team using it.
+- The "My profile" page should include a name, email, option to add a picture, an overview of teams created and teams the user is part of, and a section to review invitations to a team ("My invitations") and a section to join a team by entering the given unique code ("Join a team").
+- The creator of a team should be able to remove any team members.
+- When a user reviews a Kanban board, they should be able to click on any of the visible team members on the list to filter all tasks to that specific team member and click on "team" to remove the filter. They should be able to select multiple team members at once.
+
 
 Non-Functional Requirements
-- The website should be accessible for colour blind users
-- The website should have tags for visually impaired users
-- The website should have logins to keep the data secure
+- The website should be accessible for colour blind users.
+- The website should have alt tags for visually impaired users.
+- The website should have logins to keep the data secure.
 
 ## 1. Problem
 
