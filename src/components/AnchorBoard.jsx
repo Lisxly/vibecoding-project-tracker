@@ -7,7 +7,7 @@ export default function AnchorBoard({ anchors, onChange }) {
   return (
     <section aria-label="Project deliverables" className="mb-6">
       <h2 className="mb-3 font-heading text-base font-semibold uppercase">Deliverables</h2>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {ANCHOR_DEFS.map((a) => {
           const url = anchors[a.id] || '';
           return (

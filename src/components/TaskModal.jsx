@@ -63,7 +63,7 @@ export default function TaskModal({ task, isNew, members, onSave, onDelete, onCo
               <label htmlFor="f-assignee" className={label}>Assignee</label>
               <select id="f-assignee" className={field} value={d.assignee} onChange={set('assignee')}>
                 <option value="">Unassigned</option>
-                {members.map((m) => <option key={m.id} value={m.name}>{m.name}</option>)}
+                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
             <div>
@@ -92,7 +92,7 @@ export default function TaskModal({ task, isNew, members, onSave, onDelete, onCo
             </div>
             <label htmlFor="f-context" className="sr-only">Context (Markdown)</label>
             <textarea id="f-context" rows={7} className={`${field} font-mono text-xs`} value={d.context} onChange={set('context')} />
-            <button type="button" onClick={() => onCopy(buildContextMarkdown(d), true)}
+            <button type="button" onClick={() => onCopy(buildContextMarkdown(d, members.find((m) => m.id === d.assignee)?.name), true)}
               className="mt-2 inline-flex items-center gap-1 rounded-md bg-brand-accent px-3 py-1.5 text-xs hover:bg-brand-accent/70">
               <Icon name="copy" size={12} /> Copy Context
             </button>

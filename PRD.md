@@ -5,7 +5,7 @@
 ---
 Data Requirements
 - Names of members for the team
-- Email for memberes
+- Email for members
 - Unique "Join Team" code
 
 Functional Requirements
@@ -19,7 +19,7 @@ Functional Requirements
 - There should be an Anchor that gives the user a text field to enter any relevant URLs for "Git Repository", "Presentation", and others.
 - There needs to be a simple sign-up page to include Name and Email, which gets stored and can be used to log in.
 - A login page is required, from which you can log in to your team to view your team's Kanban board.
-- When signing in, the user's email needs to be unique and verified. If the email is not unique, inform the user that the email is already signed up and in use.
+- When signing in, the user's email needs to be unique and verified. If the email is not unique, inform the user that the email is already signed up and in use. Verification is a simulated 6-digit code shown on screen (no email is sent in this version).
 - When logged in, the user should see a dashboard on the hero page with a section for "My teams", "Create a team", and "My Profile".
 - When clicking on "Create a team", the user should be able to create a new Kanban board with all features and be able to add team members using their emails. They should also be able to generate a unique code so anyone can join a team using it.
 - The "My profile" page should include a name, email, option to add a picture, an overview of teams created and teams the user is part of, and a section to review invitations to a team ("My invitations") and a section to join a team by entering the given unique code ("Join a team").
@@ -46,25 +46,40 @@ A spreadsheet doesn't solve this. A real project tool (Linear, Jira, Notion) is 
 - **Primary:** the team members, for the remaining weeks of the summer semester.
 - **Secondary:** future cohorts of vibecoders taking the same class.
 
+**Stakeholder persona — Meredith Wilson (35), Senior Software Engineer, remote, London.** Juggles several projects plus life outside work, so she easily loses track of tasks; late work delays treatments for patients. She values her time, prefers simplicity over aesthetics, and measures success by software cycle time. Her team wants tasks done on time, a clear overview of everyone's progress, and better context when picking up a teammate's task.
+
+How the persona shapes the product:
+
+| Persona need | Product answer |
+|---|---|
+| Loses track across many projects | Dashboard "My teams" + "Due next" list of my tasks across all teams |
+| Overview of everyone's progress | Per-member active-task counts and multi-select member filter on the board |
+| Picking up a teammate's task | Context field + "Copy Context" briefing + handoff dropdown |
+| Success = cycle time | Average cycle time (created → done) shown on each team board |
+| Values time, simplicity | Few clicks, plain labels, no decorative extras |
+
 We are designing the tool we ourselves will use. The pitch demo is also our first real user test.
 
 ## 3. Product overview
 
-A single-page web app with two persistent surfaces:
+A single-page web app. After logging in, the user lands on a **dashboard** ("My teams", "Create a team", "My Profile"). Each team has its own board with two persistent surfaces:
 
-- A **Kanban board** where vibecoding tasks move through four states.
-- An **Anchor Board** above it that pins the four final-project deliverables (Presentation, Demo, Report, Documentation).
+- A **Kanban board** where vibecoding tasks move through four states, filterable by one or more team members.
+- An **Anchor Board** above it that pins the final-project links (Git Repository, Presentation, Demo, Report, Documentation).
+
+Teams are joined by email invitation or by a unique join code. The creator of a team manages members.
 
 Each task carries the prompt context that produced it, so any teammate can click a button and copy the task + prompt history back into an AI chat to continue work.
 
 ## 4. Primary user flow
 
-1. Open the Webapp. The board loads from local storage.
-2. Click "+" to add a task. Fill in title, type, assignee, due date, prompt context.
-3. Move the task across columns as you work.
-4. When stuck, click "Copy as Prompt Context" on a task and paste it into Claude/ChatGPT/Cursor to continue.
-5. Hand off a task to a teammate with one dropdown.
-6. Drop final deliverable links into the Anchor Board as you produce them.
+1. Sign up (name + email; the email must be unique), confirm the on-screen verification code, and log in. The dashboard loads from local storage.
+2. Create a team (and invite members by email), or accept an invitation / enter a join code in My Profile.
+3. Open a team. Click "Add Task" to add a task. Fill in title, type, assignee, due date, prompt context.
+4. Move the task across columns as you work. Click a member (or several) to filter the board; click "Team" to clear the filter.
+5. When stuck, click "Copy Context" on a task and paste it into Claude/ChatGPT/Cursor to continue.
+6. Hand off a task to a teammate with one dropdown.
+7. Drop final deliverable links into the Anchor Board as you produce them.
 
 ## 5. Data model
 
@@ -72,15 +87,39 @@ Locked. Do not change without team agreement.
 
 ```js
 // A single vibecoding task.
+User = {
+  id: string,
+  name: string,
+  email: string,                 // unique, stored lowercase
+  verified: boolean,             // true once the on-screen verification code was entered
+  picture: string | null,        // small data-URL; alt text is generated from the name
+}
+
+// A team with its own board.
+Team = {
+  id: string,
+  name: string,
+  creatorId: string,             // User.id; only the creator can remove members
+  memberIds: string[],           // User.id values
+  joinCode: string,              // unique 6-character "Join Team" code
+  anchors: { [anchorId]: string }, // deliverable links for this team
+}
+
+// Pending email invitation, shown under "My invitations" for that email.
+Invitation = { id: string, teamId: string, email: string, invitedBy: string }
+
+// A single vibecoding task.
 Task = {
   id: string,                    // uuid or timestamp string
+  teamId: string,                // Team.id
   title: string,
   description: string,
   type: 'feature' | 'bug',       // visual color coding
   status: 'todo' | 'in-progress' | 'review' | 'done',
-  assignee: string,              // one of the three teammate names from §8
+  assignee: string,              // User.id of a member of the task's team ('' = unassigned)
   dueDate: string | null,        // ISO date 'YYYY-MM-DD'
   createdDate: string,           // ISO date 'YYYY-MM-DD'
+  completedAt: string | null,    // ISO timestamp set when moved to Done (drives cycle time)
 
   // Added in later milestones:
   context: string,               // M9 context — curated briefing for the next AI / teammate
@@ -88,9 +127,9 @@ Task = {
   contextUpdatedAt: string|null, // M9 context — ISO timestamp set automatically on save
 }
 
-// One of four pinned deliverable slots.
+// One of five pinned deliverable slots.
 Anchor = {
-  id: 'presentation' | 'demo' | 'report' | 'documentation',
+  id: 'git' | 'presentation' | 'demo' | 'report' | 'documentation',
   label: string,                 // human-readable
   url: string | null,            // the link the team pastes in
 }
@@ -105,6 +144,8 @@ Anchor = {
 | State | React `useState` + a `useLocalStorage` hook | Simple, no library needed. |
 | Persistence | **localStorage** | Zero infra. Pick this. Do not switch to a backend mid-hackathon. |
 | Deploy | Vercel | One-click deploy from GitHub. |
+
+> **Known limitation:** localStorage lives in one browser, so accounts, teams, invitations and join codes only work between users of the **same browser** in this version (demo by signing up several accounts there). Email addresses are checked for format and uniqueness, and sign-up includes a **simulated** verification step (a 6-digit code displayed on screen, clearly labelled demo mode) — no real email is sent for verification or invitations. Real cross-device teams and email verification need a backend (M14).
 
 > **Decision:** localStorage, not a shared backend. If you want a shared backend later, that's M14 — out of scope for the hackathon.
 
@@ -127,7 +168,7 @@ Fill these in before tagging `prd-done`:
 | Teammate B | `<TODO>` | `<TODO>` |
 | Teammate C | `<TODO>` | `<TODO>` |
 
-These three names become the **only** allowed values for `Task.assignee`. No auth — just a dropdown.
+Task assignees are chosen from the members of the task's team (see §5). Log in with the email you signed up with — there are no passwords in this version.
 
 ## 9. Milestone ownership
 
@@ -177,11 +218,11 @@ Fill in:
 
 ## 12. Out of scope (do not build)
 
-- Authentication / accounts.
+- Passwords, password reset and *real* email verification (needs a backend; the app only simulates it).
+- Sending real emails for invitations.
 - Real GitHub integration.
 - A real backend / shared database.
 - Mobile responsive — desktop only is fine.
-- Multi-team support.
 - Real-time collaboration.
 
 ## 13. Definition of done
